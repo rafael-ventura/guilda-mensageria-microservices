@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="MassTransit" Version="8.3.4" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.4" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DispatchService.Application\DispatchService.Application.csproj" />
+    <ProjectReference Include="..\DispatchService.Infrastructure\DispatchService.Infrastructure.csproj" />
+    <ProjectReference Include="..\DispatchService.Integration\DispatchService.Integration.csproj" />
+    <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

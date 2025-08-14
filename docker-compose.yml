@@ -1,0 +1,73 @@
+services:
+  # RabbitMQ com Management UI
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: guilda-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_VHOST: guilda
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - guilda-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: guilda-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: guilda
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - guilda-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d guilda"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # pgAdmin (opcional - para visualizar o banco)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: guilda-pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@guilda.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - guilda-network
+    depends_on:
+      - postgres
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  guilda-network:
+    driver: bridge

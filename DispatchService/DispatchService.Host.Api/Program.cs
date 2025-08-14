@@ -16,7 +16,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// TODO: Adicionar MediatR
+// MediatR - Commands/Queries/Notifications
+builder.Services.AddMediatR(cfg => 
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterServicesFromAssemblyContaining<DispatchService.Application.AssemblyMarker>();
+});
+
 // TODO: Adicionar MassTransit
 // TODO: Adicionar EF Core
 

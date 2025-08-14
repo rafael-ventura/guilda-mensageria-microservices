@@ -316,6 +316,11 @@ OpenCover/
 # Azure Stream Analytics local run output
 ASALocalRun/
 
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+
 # MSBuild Binary and Structured Log
 *.binlog
 

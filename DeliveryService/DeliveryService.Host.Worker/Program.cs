@@ -11,8 +11,14 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Services.AddSerilog();
 
+// MediatR - Commands/Queries/Notifications
+builder.Services.AddMediatR(cfg => 
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterServicesFromAssemblyContaining<DeliveryService.Application.AssemblyMarker>();
+});
+
 // TODO: Adicionar MassTransit
-// TODO: Adicionar MediatR
 // TODO: Adicionar EF Core
 
 var host = builder.Build();

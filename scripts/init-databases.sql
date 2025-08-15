@@ -1,21 +1,36 @@
 -- Script para criar bancos de dados para cada microsserviço
--- Executado automaticamente quando o container PostgreSQL sobe
+-- Executado automaticamente quando o container SQL Server sobe
 
 -- Banco para DispatchService
-CREATE DATABASE guilda_dispatch;
-GRANT ALL PRIVILEGES ON DATABASE guilda_dispatch TO postgres;
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'GuildaDispatch')
+BEGIN
+    CREATE DATABASE GuildaDispatch;
+    PRINT 'Database GuildaDispatch criado com sucesso!';
+END
+GO
 
 -- Banco para DeliveryService  
-CREATE DATABASE guilda_delivery;
-GRANT ALL PRIVILEGES ON DATABASE guilda_delivery TO postgres;
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'GuildaDelivery')
+BEGIN
+    CREATE DATABASE GuildaDelivery;
+    PRINT 'Database GuildaDelivery criado com sucesso!';
+END
+GO
 
 -- Banco para InboxService
-CREATE DATABASE guilda_inbox;
-GRANT ALL PRIVILEGES ON DATABASE guilda_inbox TO postgres;
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'GuildaInbox')
+BEGIN
+    CREATE DATABASE GuildaInbox;
+    PRINT 'Database GuildaInbox criado com sucesso!';
+END
+GO
 
--- Banco para NotificationService (se precisar de persistência)
-CREATE DATABASE guilda_notification;
-GRANT ALL PRIVILEGES ON DATABASE guilda_notification TO postgres;
+-- Banco para NotificationService
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'GuildaNotification')
+BEGIN
+    CREATE DATABASE GuildaNotification;
+    PRINT 'Database GuildaNotification criado com sucesso!';
+END
+GO
 
--- Log das criações
-\echo 'Databases criados com sucesso para a Guilda dos Mensageiros!'
+PRINT 'Todos os databases foram criados com sucesso para a Guilda dos Mensageiros!';

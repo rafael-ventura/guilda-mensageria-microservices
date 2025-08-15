@@ -21,51 +21,31 @@ services:
       timeout: 10s
       retries: 5
 
-  # PostgreSQL
-  postgres:
-    image: postgres:15-alpine
-    container_name: guilda-postgres
+  # SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: guilda-sqlserver
     ports:
-      - "5432:5432"
+      - "1433:1433"
     environment:
-      POSTGRES_DB: guilda
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-      PGDATA: /var/lib/postgresql/data/pgdata
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: YourStrong@Passw0rd
+      MSSQL_PID: Express
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - sqlserver_data:/var/opt/mssql
       - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     networks:
       - guilda-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d guilda"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # pgAdmin (opcional - para visualizar o banco)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: guilda-pgadmin
-    ports:
-      - "8080:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@guilda.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - guilda-network
-    depends_on:
-      - postgres
-
 volumes:
   rabbitmq_data:
     driver: local
-  postgres_data:
-    driver: local
-  pgadmin_data:
+  sqlserver_data:
     driver: local
 
 networks:

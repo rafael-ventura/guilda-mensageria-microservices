@@ -1,4 +1,6 @@
 using Serilog;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +25,31 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<DispatchService.Application.AssemblyMarker>();
 });
 
-// TODO: Adicionar MassTransit
-// TODO: Adicionar EF Core
+// MassTransit - Mensageria com RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
+        
+        cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+        {
+            h.Username(rabbitConfig["Username"]);
+            h.Password(rabbitConfig["Password"]);
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
+// EF Core + SQL Server
+builder.Services.AddDbContext<DispatchService.Infrastructure.Data.DispatchDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+// Repository Pattern + Unit of Work
+builder.Services.AddScoped<DispatchService.Domain.Repositories.IUnitOfWork, DispatchService.Infrastructure.Repositories.UnitOfWork>();
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
 using Serilog;
+using MassTransit;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -18,7 +19,26 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<DeliveryService.Application.AssemblyMarker>();
 });
 
-// TODO: Adicionar MassTransit
+// MassTransit - Mensageria com RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    // Registrar consumers
+    x.AddConsumersFromNamespaceContaining<DeliveryService.Integration.EventsIn.RecadoCriadoEventConsumer>();
+    
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
+        
+        cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+        {
+            h.Username(rabbitConfig["Username"]);
+            h.Password(rabbitConfig["Password"]);
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 // TODO: Adicionar EF Core
 
 var host = builder.Build();

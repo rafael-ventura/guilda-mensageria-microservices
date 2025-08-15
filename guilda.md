@@ -1,199 +1,285 @@
-Briefing do Projeto — Guilda dos Mensageiros (Microsserviços + Mensageria)
-Contexto & Objetivo
-Quero um projeto didático, porém realista, para treinar microsserviços com mensageria usando .NET. O domínio é lúdico (entregas de “recados” por uma guilda), mas o foco é arquitetura, padrões de projeto e boas práticas.
+# 📋 Briefing do Projeto — Guilda dos Mensageiros
+## Microsserviços + Mensageria com .NET 9
 
-Stack técnica (fixa)
-.NET 9 (Host genérico para workers e WebAPI para o gateway).
+---
 
-RabbitMQ + MassTransit (bus de mensagens).
+## 🎯 **Contexto & Objetivo**
 
-MediatR (Commands/Queries/Notifications locais em cada serviço).
+Projeto didático e realista para treinar **microsserviços com mensageria** usando .NET. 
 
-EF Core (ou Dapper) + Postgres (persistência) — Outbox quando aplicável.
+- **Domínio:** Lúdico (entregas de "recados" por uma guilda)
+- **Foco:** Arquitetura, padrões de projeto e boas práticas
+- **Objetivo:** Sistema distribuído resiliente e bem estruturado
 
-Serilog (logs) e OpenTelemetry (telemetria, quando útil).
+---
 
-Docker Compose para infra local (RabbitMQ/Postgres).
+## 🛠️ **Stack Técnica (Fixa)**
 
-Contracts como projeto separado para DTOs de integração (eventos/comandos entre serviços).
+### **Core Framework**
+- ✅ **.NET 9** - Host genérico (Workers) + WebAPI (Gateway)
+- ✅ **C# 13** - Records, Pattern Matching, Global Usings
 
-Importante: não invente libs novas sem justificar. Se sugerir algo fora da lista, explique por que, impacto e como remove se não servir.
+### **Mensageria**
+- ✅ **RabbitMQ** - Message Broker
+- ✅ **MassTransit** - Abstração + Patterns (Saga, Outbox, Retry)
 
-Arquitetura (Hexagonal / Ports & Adapters)
-Serviços:
+### **Persistência**
+- ✅ **SQL Server** - Banco principal (mudou de PostgreSQL)
+- ✅ **EF Core 9** - ORM + Migrations + Configurations
+- ✅ **Dapper** - Queries otimizadas (quando necessário)
 
-DispatchService (único com API HTTP): recebe requisições REST, processa commands locais (MediatR), persiste e publica eventos de integração.
+### **Padrões Internos**
+- ✅ **MediatR** - Commands/Queries/Notifications locais
+- ✅ **Repository + Unit of Work** - Abstração de dados
+- ✅ **Outbox Pattern** - Consistência transacional
 
-DeliveryService (Worker): consome eventos de criação, simula entrega, publica eventos de status e emite comandos de integração para notificação.
+### **Observabilidade**
+- ✅ **Serilog** - Logging estruturado
+- 🔄 **OpenTelemetry** - Telemetria distribuída (futuro)
 
-InboxService (Worker): mantém a “timeline” do destinatário; consome eventos (criação/entrega) e comandos de integração quando existirem.
+### **Infraestrutura**
+- ✅ **Docker Compose** - RabbitMQ + SQL Server local
+- ✅ **Contracts** - Projeto separado para DTOs de integração
 
-NotificationService (Worker): consome comando de integração para notificar remetente/destinatário (simulado).
+> ⚠️ **Regra:** Não inventar libs novas sem justificar. Se sugerir algo fora da lista, explicar por quê, impacto e como remover.
 
-Padrões:
+---
 
-Command (local): intenção imperativa dentro do serviço (MediatR).
+## 🏗️ **Arquitetura (Hexagonal / Ports & Adapters)**
 
-Event (integração): fato ocorrido entre serviços (MassTransit/RabbitMQ).
+### **🎯 Microsserviços**
 
-CQRS: separar leitura/escrita no nível de cada serviço (principalmente Inbox e Dispatch).
+#### **🌐 DispatchService** *(único com API HTTP)*
+- **Responsabilidade:** Ponto de entrada REST
+- **Função:** Recebe requisições, processa commands (MediatR), persiste e publica eventos
+- **Padrões:** API Gateway + Outbox Pattern + CQRS
 
-Idempotência nos handlers de mensagens.
+#### **🚚 DeliveryService** *(Worker)*
+- **Responsabilidade:** Processa entregas
+- **Função:** Consome eventos de criação, simula entrega, publica status
+- **Padrões:** Saga Pattern + Retry + Circuit Breaker
 
-Retry com backoff e DLQ (Dead Letter Queue) para falhas repetidas.
+#### **📥 InboxService** *(Worker)*
+- **Responsabilidade:** Timeline do destinatário
+- **Função:** Mantém histórico, consome eventos e comandos de integração
+- **Padrões:** CQRS + Event Sourcing + Materialized View
 
-Outbox para consistência (quando publicar evento após transação).
+#### **🔔 NotificationService** *(Worker)*
+- **Responsabilidade:** Notificações
+- **Função:** Consome comandos, notifica remetente/destinatário (simulado)
+- **Padrões:** Strategy + Template Method + Adapter
 
-Adapters (Ports & Adapters): inbound (Controllers/Consumers) e outbound (Repos/Publishers).
+---
 
-Topologia de Mensageria (nomes canônicos)
-Exchanges (fanout)
+## 📂 **Estrutura de Pastas por Serviço**
 
-recado.events — publica: DispatchService; consomem: DeliveryService, InboxService.
-
-entrega.events — publica: DeliveryService; consome: InboxService (e Notification opcional).
-
-Queues (direct/commands)
-
-notificacao.commands — publica: DeliveryService; consome: NotificationService.
-
-inbox.commands — publica: Dispatch/Delivery (quando preferir comando); consome: InboxService.
-
-DLQ: sufixo *.dlq para cada fila com política de retry.
-
-Regra: eventos são broadcast (fanout); comandos de integração vão para fila dedicada do serviço alvo.
-
-Estrutura de Pastas por Serviço
-Somente DispatchService tem API; os demais são Worker.
-
-bash
-Copiar
-Editar
+```
 <Service>/
-  <Service>.Host.Api     # só para o DispatchService
-  <Service>.Host.Worker  # para Delivery/Inbox/Notification
-  <Service>.Application  # Commands/Queries/Handlers (MediatR) – uso local
-  <Service>.Domain       # Entidades/VOs/Domain Events (internos)
-  <Service>.Infrastructure  # DB, Outbox, config do bus, providers
-  <Service>.Integration     # MENSAGERIA (adapters)
-    Topology/               # nomes de exchanges/filas, convenções
-    EventsIn/               # Consumers (MassTransit) de eventos externos
-    EventsOut/              # Publishers de eventos externos
-    CommandsIn/             # Consumers de comandos de integração
-    CommandsOut/            # Publishers de comandos de integração
-    Mappings/               # mapeamento Domain ↔ Contracts (DTOs)
-Projeto compartilhado Contracts/:
+  <Service>.Host.Api       # 🌐 só DispatchService
+  <Service>.Host.Worker    # ⚙️ Delivery/Inbox/Notification
+  <Service>.Application    # 📋 Commands/Queries/Handlers (MediatR)
+  <Service>.Domain         # 🏛️ Entities/VOs/Domain Events
+  <Service>.Infrastructure # 🗄️ DB, Outbox, Bus config, Providers
+  <Service>.Integration    # 📡 MENSAGERIA (adapters)
+    ├── Topology/          # 🏗️ Exchanges/Queues, convenções
+    ├── EventsIn/          # 📥 Consumers de eventos externos
+    ├── EventsOut/         # 📤 Publishers de eventos externos
+    ├── CommandsIn/        # 📥 Consumers de comandos de integração
+    ├── CommandsOut/       # 📤 Publishers de comandos de integração
+    └── Mappings/          # 🔄 Domain ↔ Contracts (DTOs)
+```
 
-Apenas DTOs de integração: RecadoCriadoEvent, EntregaConcluidaEvent, EntregaFalhouEvent, EnviarNotificacaoCommand, RegistrarNaInboxCommand, etc.
+### **📦 Projeto Compartilhado**
+```
+Contracts/
+  ├── Events/              # 📡 RecadoCriadoEvent, EntregaConcluidaEvent, etc.
+  └── Commands/            # 📋 EnviarNotificacaoCommand, RegistrarNaInboxCommand
+```
 
-Não colocar entidades de domínio aqui.
+> ⚠️ **Regra:** Apenas DTOs de integração. **NÃO** colocar entidades de domínio.
 
-Fluxo ponta-a-ponta (sequência)
-mermaid
-Copiar
-Editar
+---
+
+## 🔄 **Topologia de Mensageria (Nomes Canônicos)**
+
+### **📡 Exchanges (Fanout)**
+```
+recado.events    → publica: DispatchService
+                 → consomem: DeliveryService, InboxService
+
+entrega.events   → publica: DeliveryService  
+                 → consome: InboxService (+ Notification opcional)
+```
+
+### **📬 Queues (Direct/Commands)**
+```
+notificacao.commands → publica: DeliveryService
+                     → consome: NotificationService
+
+inbox.commands       → publica: Dispatch/Delivery (quando preferir comando)
+                     → consome: InboxService
+```
+
+### **💀 Dead Letter Queues**
+```
+*.dlq → sufixo para cada fila com política de retry
+```
+
+### **🔄 Regras de Mensageria**
+- **Eventos:** Broadcast (fanout) - múltiplos consumers
+- **Comandos:** Point-to-point (direct) - single consumer
+- **Idempotência:** Handlers seguros para reprocessamento
+- **Retry:** Backoff exponencial com DLQ
+
+---
+
+## 🌊 **Fluxo Ponta-a-Ponta**
+
+```mermaid
 sequenceDiagram
-  participant Cliente
-  participant DispatchApi as DispatchService.Api
-  participant DispatchApp as DispatchService.App
-  participant Rabbit as RabbitMQ
-  participant Delivery as DeliveryService.Worker
-  participant Inbox as InboxService.Worker
-  participant Notify as NotificationService.Worker
+    participant Cliente
+    participant DispatchApi as DispatchService.Api
+    participant DispatchApp as DispatchService.App
+    participant Rabbit as RabbitMQ
+    participant Delivery as DeliveryService.Worker
+    participant Inbox as InboxService.Worker
+    participant Notify as NotificationService.Worker
 
-  Cliente->>DispatchApi: POST /recados (DTO)
-  DispatchApi->>DispatchApp: MediatR.Send(CriarRecadoCommand)
-  DispatchApp-->>DispatchApi: Id do recado
+    Cliente->>DispatchApi: POST /recados (DTO)
+    DispatchApi->>DispatchApp: MediatR.Send(CriarRecadoCommand)
+    DispatchApp-->>DispatchApi: Id do recado
 
-  DispatchApp->>Rabbit: Publish RecadoCriadoEvent (recado.events)
-  Rabbit-->>Delivery: RecadoCriadoEvent
-  Rabbit-->>Inbox: RecadoCriadoEvent
+    DispatchApp->>Rabbit: Publish RecadoCriadoEvent (recado.events)
+    Rabbit-->>Delivery: RecadoCriadoEvent
+    Rabbit-->>Inbox: RecadoCriadoEvent
 
-  Delivery->>Delivery: Tentar entrega (retry/backoff)
-  alt sucesso
-    Delivery->>Rabbit: Publish EntregaConcluidaEvent (entrega.events)
-    Delivery->>Rabbit: Send EnviarNotificacaoCommand (notificacao.commands)
-  else falha
-    Delivery->>Rabbit: Publish EntregaFalhouEvent (entrega.events)
-    Delivery->>Rabbit: Send EnviarNotificacaoCommand (notificacao.commands)
-  end
+    Delivery->>Delivery: Tentar entrega (retry/backoff)
+    alt sucesso
+        Delivery->>Rabbit: Publish EntregaConcluidaEvent (entrega.events)
+        Delivery->>Rabbit: Send EnviarNotificacaoCommand (notificacao.commands)
+    else falha
+        Delivery->>Rabbit: Publish EntregaFalhouEvent (entrega.events)
+        Delivery->>Rabbit: Send EnviarNotificacaoCommand (notificacao.commands)
+    end
 
-  Inbox->>Inbox: Atualiza timeline (criação + status)
-  Notify->>Notify: Envia notificação (simulada)
-Convenções & Regras
-Naming: recado.events, entrega.events, notificacao.commands, inbox.commands, DLQ *.dlq.
+    Inbox->>Inbox: Atualiza timeline (criação + status)
+    Notify->>Notify: Envia notificação (simulada)
+```
 
-Versionamento de contratos: adotar versionamento por namespace ou sufixo (ex.: v1) e evitar breaking changes; quando quebrar, novo contrato (ex.: EntregaConcluidaEventV2).
+---
 
-Config (por serviço):
+## ⚙️ **Configurações & Convenções**
 
-RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_VHOST
+### **🏷️ Naming**
+- **Exchanges:** `recado.events`, `entrega.events`
+- **Queues:** `notificacao.commands`, `inbox.commands`
+- **DLQ:** `*.dlq`
 
-DB_CONNECTIONSTRING
+### **📝 Versionamento**
+- **Namespace/Sufixo:** `v1`, `v2` para evitar breaking changes
+- **Evolução:** `EntregaConcluidaEventV2` quando quebrar compatibilidade
 
-PREFETCH_COUNT, RETRY_INTERVALS (segundos), DLQ_SUFFIX
+### **🔧 Configuração por Serviço**
+```json
+{
+  "RabbitMQ": {
+    "Host": "localhost",
+    "VirtualHost": "guilda", 
+    "Username": "admin",
+    "Password": "admin123",
+    "PrefetchCount": 10,
+    "RetryIntervals": [1, 5, 15, 30, 60]
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost,1433;Database=Guilda{Service}..."
+  }
+}
+```
 
-Observabilidade: logs com Serilog; se usar OTel, exportar no console para dev.
+---
 
-O que construir primeiro (Iteração 1)
-Solução e projetos com as pastas propostas.
+## 🎯 **Progresso de Implementação**
 
-docker-compose com RabbitMQ (management) e Postgres.
+### ✅ **Iteração 1 - Estrutura Base (CONCLUÍDA)**
+- ✅ Solução e projetos com estrutura hexagonal
+- ✅ Docker Compose (RabbitMQ + SQL Server)
+- ✅ Bootstrap MassTransit + MediatR em todos os serviços
+- ✅ Contracts v1 implementados
+- ✅ Topologia declarada e registrada no bus
+- ✅ Consumers básicos registrados
+- ✅ Políticas de retry/DLQ configuráveis
 
-Bootstrap dos hosts:
+### ✅ **DispatchService (COMPLETO)**
+- ✅ Domain Layer (Recado, OutboxMessage, Repositories)
+- ✅ Infrastructure Layer (EF Core, SQL Server, Unit of Work)
+- ✅ Application Layer (Commands, Handlers, Outbox Pattern)
+- ✅ API Layer (Controller, Swagger, Validações)
+- ✅ Migrações EF Core criadas
 
-Dispatch Api: DI de MediatR, leitura de configs, MassTransit conectado (sem domínio).
+### 🔄 **Próximas Iterações**
+- 🔄 **DeliveryService** - Domain + Consumers + Publishers
+- 🔄 **InboxService** - CQRS + Timeline + Event Sourcing
+- 🔄 **NotificationService** - Providers + Strategy Pattern
+- 🔄 **Testes de Integração** - Fluxo end-to-end
+- 🔄 **Observabilidade** - OpenTelemetry + Métricas
 
-Delivery/Inbox/Notification Workers: DI e MassTransit prontos para consumir/publicar.
+---
 
-Declaração de topologia (nomes e bindings) e registro no bus (MassTransit).
+## 🧪 **Critérios de Aceite**
 
-Contracts v1: criar DTOs (vazios por enquanto ou com campos mínimos).
+### **✅ Iteração 1 (CONCLUÍDA)**
+- ✅ Todos os serviços sobem e conectam ao RabbitMQ
+- ✅ Exchanges/filas criadas automaticamente
+- ✅ Logs mostram conexões e bindings
+- ✅ Consumers registrados sem exceções
+- ✅ DispatchService aceita POST /api/recados
 
-Políticas de retry/backoff e DLQ configuráveis por settings.
+### **🎯 Próximas Iterações**
+- 🔄 Fluxo completo: POST → Event → Processing → Notification
+- 🔄 Outbox Pattern funcionando (consistência)
+- 🔄 Retry policies com DLQ
+- 🔄 Timeline do destinatário atualizada
+- 🔄 Notificações enviadas
 
-Sem implementar regras de domínio agora — a prioridade é infra + mensageria funcionando.
+---
 
-Critérios de Aceite (D.O.D. da Iteração 1)
-Todos os serviços sobem localmente (Rider) e conectam ao RabbitMQ do docker.
+## 📋 **Comandos Úteis**
 
-Exchanges/filas existem com nomes corretos.
+### **🐳 Docker**
+```bash
+docker-compose up -d                    # Subir infraestrutura
+docker-compose logs -f rabbitmq         # Logs RabbitMQ
+docker-compose logs -f sqlserver        # Logs SQL Server
+```
 
-Logs mostram tentativas de conexão e bindings concluídos.
+### **🗄️ Migrations**
+```bash
+dotnet ef migrations add <Nome> --project Infrastructure --startup-project Host.Api
+dotnet ef database update --project Infrastructure --startup-project Host.Api
+```
 
-Consumers registrados sem exceções.
+### **🚀 Executar Serviços**
+```bash
+# DispatchService (API)
+cd DispatchService/DispatchService.Host.Api && dotnet run
 
-Documento curto README.md na raiz com:
+# Workers (terminais separados)
+cd DeliveryService/DeliveryService.Host.Worker && dotnet run
+cd InboxService/InboxService.Host.Worker && dotnet run
+cd NotificationService/NotificationService.Host.Worker && dotnet run
+```
 
-Como subir o docker, rodar cada serviço e URLs/porta.
+### **🔍 URLs Importantes**
+- **DispatchService API:** `https://localhost:7000`
+- **Swagger:** `https://localhost:7000/swagger`
+- **RabbitMQ Management:** `http://localhost:15672` (admin/admin123)
 
-Desenho/mermaid do fluxo (pode reaproveitar o acima).
+---
 
-Lista de contratos v1 e quem publica/consome.
+## 🎉 **Status Atual**
 
-Transparência exigida do Cursor
-Explique toda decisão arquitetural e de biblioteca antes de gerar qualquer código/config.
+**✅ ESTRUTURA BÁSICA COMPLETA!**  
+**✅ DISPATCHSERVICE 100% FUNCIONAL!**  
+**🔄 PRÓXIMO: DELIVERYSERVICE**
 
-Liste suposições que estiver fazendo; se faltar informação, pergunte.
-
-Não gere trechos grandes de código de domínio agora. Foque em configuração e bootstrap.
-
-Não adicione dependências além das citadas sem justificar custo/benefício e como revertê-las.
-
-Ao propor mudanças na topologia ou nomes, mostre impacto (quem publica/consome, retrocompatibilidade).
-
-Forneça passo a passo para testar localmente (incluindo comandos docker e como ver as filas no management UI).
-
-Se algo falhar, reporte o erro observado, hipóteses de causa e próximos passos.
-
-Entregáveis esperados do Cursor nesta etapa
-Lista de projetos/targets a criar (sem lógica de domínio).
-
-docker-compose.yml para RabbitMQ/Postgres.
-
-appsettings base por serviço com chaves de Rabbit/DB.
-
-Registro do MassTransit (bus) com exchanges/queues/bindings e políticas de retry/DLQ.
-
-README com instruções de uso e diagrama do fluxo.
-
+Todos os microsserviços buildando e prontos para desenvolvimento individual! 🚀

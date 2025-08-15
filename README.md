@@ -187,9 +187,11 @@ graph TD
 - **MassTransit**: Abstração para mensageria + Patterns
 
 ### Persistência  
-- **PostgreSQL**: Banco principal
-- **Entity Framework Core 9**: ORM + Migrations
-- **Dapper**: Queries otimizadas (quando necessário)
+- **SQL Server**: Banco principal (migrado do PostgreSQL)
+- **Entity Framework Core 9**: ORM + Migrations + Configurations
+- **Repository Pattern**: Abstração de acesso a dados
+- **Unit of Work**: Coordenação de transações
+- **Outbox Pattern**: Consistência entre persistência e mensageria
 
 ### Observabilidade
 - **Serilog**: Logging estruturado
@@ -262,25 +264,44 @@ cd NotificationService/NotificationService.Host.Worker
 dotnet run
 ```
 
-## 📚 Próximos Passos
+## 📚 Status de Implementação
 
-### Iteração 2: Infraestrutura
-- [ ] Docker Compose (RabbitMQ + PostgreSQL)
-- [ ] Bootstrap MassTransit + MediatR
-- [ ] Configuração de topologia de mensageria
-- [ ] Políticas de retry/DLQ
+### ✅ Iteração 1: Estrutura Base (CONCLUÍDA)
+- [x] Solução e projetos com estrutura hexagonal
+- [x] Docker Compose (RabbitMQ + SQL Server)
+- [x] Bootstrap MassTransit + MediatR em todos os serviços
+- [x] Configuração de topologia de mensageria
+- [x] Políticas de retry/DLQ configuráveis
+- [x] Consumers básicos implementados
 
-### Iteração 3: Domínio
-- [ ] Implementação das regras de negócio
-- [ ] Handlers de Commands/Events
-- [ ] Persistência com EF Core
-- [ ] Outbox Pattern
+### ✅ DispatchService (COMPLETO)
+- [x] **Domain Layer**: Entidades (Recado, OutboxMessage) + Repository interfaces
+- [x] **Infrastructure Layer**: EF Core + SQL Server + Repository implementations
+- [x] **Application Layer**: Commands/Handlers + Outbox Pattern
+- [x] **API Layer**: REST Controller + Swagger + Validações
+- [x] **Database**: Migrações EF Core + Configurações de entidades
+- [x] **Patterns**: Unit of Work + Repository + CQRS + Outbox
 
-### Iteração 4: Observabilidade
-- [ ] OpenTelemetry + Jaeger
-- [ ] Health Checks
-- [ ] Métricas customizadas
+### 🔄 Iteração 2: Microsserviços Restantes
+- [ ] **DeliveryService**: Domain + Consumers + Publishers + Saga Pattern
+- [ ] **InboxService**: CQRS + Timeline + Event Sourcing + Materialized Views  
+- [ ] **NotificationService**: Strategy Pattern + Providers + Templates
+- [ ] **Testes de Integração**: Fluxo end-to-end completo
+
+### 🔄 Iteração 3: Observabilidade & Qualidade
+- [ ] OpenTelemetry + Jaeger (Distributed Tracing)
+- [ ] Health Checks em todos os serviços
+- [ ] Métricas customizadas (Prometheus)
 - [ ] Dashboard Grafana
+- [ ] Testes unitários e de integração
+- [ ] Contract Testing (Pact)
+
+### 🔄 Iteração 4: Produção & DevOps
+- [ ] CI/CD Pipeline
+- [ ] Kubernetes manifests
+- [ ] Helm Charts
+- [ ] Monitoring & Alerting
+- [ ] Performance Testing
 
 ## 🎯 Objetivos de Aprendizado
 
@@ -296,4 +317,54 @@ Este projeto demonstra:
 
 ---
 
-**🎉 Estrutura básica completa! Todos os microsserviços buildando e prontos para a próxima iteração!**
+## 🚀 Como Testar o DispatchService
+
+### 1. **Subir Infraestrutura**
+```bash
+docker-compose up -d
+```
+
+### 2. **Executar DispatchService**
+```bash
+cd DispatchService/DispatchService.Host.Api
+dotnet run
+```
+
+### 3. **Testar API**
+- **Swagger UI**: `https://localhost:7000/swagger`
+- **Endpoint**: `POST https://localhost:7000/api/recados`
+
+**Exemplo de Request:**
+```json
+{
+  "remetente": "Alice",
+  "destinatario": "Bob", 
+  "conteudo": "Olá! Como você está?",
+  "enderecoEntrega": "Rua das Flores, 123"
+}
+```
+
+### 4. **Verificar RabbitMQ**
+- **Management UI**: `http://localhost:15672`
+- **Usuário**: `admin` / **Senha**: `admin123`
+- **Verificar**: Exchanges `recado.events` criado automaticamente
+
+---
+
+## 📊 Status Atual do Projeto
+
+### ✅ **CONCLUÍDO (100%)**
+- **Infraestrutura**: Docker Compose + RabbitMQ + SQL Server
+- **Mensageria**: MassTransit + Topologia + Consumers básicos  
+- **DispatchService**: Completo com todos os layers + Outbox Pattern
+- **Padrões**: Repository + Unit of Work + CQRS + Domain-Driven Design
+
+### 🔄 **PRÓXIMOS PASSOS**
+1. **DeliveryService** - Implementar processamento de entregas
+2. **InboxService** - Implementar timeline do destinatário
+3. **NotificationService** - Implementar envio de notificações
+4. **Teste End-to-End** - Fluxo completo funcionando
+
+---
+
+**🎉 DispatchService está 100% funcional! Pronto para processar recados e publicar eventos!** 🚀

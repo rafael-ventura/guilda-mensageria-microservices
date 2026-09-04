@@ -116,11 +116,16 @@ de todos os serviços rodando juntos, ao vivo.
 
 ## Fase 3 — Observabilidade fina + testes
 
-- [ ] Validar tracing distribuído ponta-a-ponta no Aspire Dashboard:
-      Dispatch → RabbitMQ → Delivery → Inbox/Notification num único trace
-- [ ] Testes de integração do fluxo completo usando `Aspire.Hosting.Testing`
-      (sobe a app inteira em memória/containers para o teste)
+- [x] `Tests/GuildaMensageria.AppHost.Tests` (xUnit + `Aspire.Hosting.Testing`) — sobe o
+      AppHost inteiro de verdade (containers), cria um recado via API do Dispatch e
+      espera a timeline do Inbox refletir um status final (Entregue/Falhou), provando o
+      fluxo ponta-a-ponta: Outbox → RabbitMQ → Delivery → RabbitMQ → Inbox. **Compila,
+      mas não foi executado** — Docker Desktop indisponível nesta sessão. Rodar
+      `dotnet test` com Docker ligado é o próximo passo de validação real.
+- [ ] Validar tracing distribuído ponta-a-ponta no Aspire Dashboard (visual, precisa
+      rodar o AppHost com Docker ligado e olhar a aba de traces)
 - [ ] Revisar DLQs: forçar uma falha proposital e confirmar que a mensagem cai na `.dlq`
+      (também precisa de runtime real)
 
 ## Fase 4 — Painel de domínio (stretch, o lado "bonitinho")
 
@@ -145,13 +150,35 @@ da Guilda.
 - Fase 0 reduzida ao essencial (remover órfãos). `Directory.Build.props` /
   `Directory.Packages.props` viraram itens opcionais no fim da lista, não bloqueiam nada.
 
+## O que falta pra fechar as Fases 0–3
+
+Só falta validação em **runtime real** — tudo que dependia de código está feito e
+compilando. Com Docker Desktop ligado:
+
+1. `dotnet run --project GuildaMensageria.AppHost` (ou `aspire run`) e conferir no
+   Aspire Dashboard que os 5 serviços + RabbitMQ + SQL Server sobem saudáveis
+2. Testar o fluxo manualmente: `POST /api/recados` no Dispatch, depois
+   `GET /api/inbox/{destinatario}` no Inbox até aparecer `Entregue` ou `Falhou`
+3. `dotnet test Tests/GuildaMensageria.AppHost.Tests` — roda o smoke test automatizado
+   do item acima
+4. Olhar a aba de traces do Dashboard pra confirmar que o trace distribuído atravessa
+   os 4 serviços num único fluxo
+5. Forçar uma falha (ex.: derrubar o SQL Server do DeliveryService no meio de um
+   processamento) e confirmar que a mensagem cai na DLQ depois de esgotar os retries
+
+Se algo desses passos não se comportar como esperado, é o próximo ponto de ajuste —
+não precisa replanejar do zero, só voltar num item específico.
+
 ## Log de Progresso
 
 - **2026-09-04** — Levantamento do estado atual do repo, criação deste roadmap e do
   dashboard visual. Escopo travado em Fases 0–3, direto na main.
-- **2026-09-04** — Fases 0 e 2 concluídas: faxina de órfãos, fix do Outbox do Dispatch,
-  migração de todo o solution para net10.0 (achado: máquina sem runtime .NET 9),
-  DeliveryService/InboxService/NotificationService implementados de ponta a ponta.
-  Solution inteira compila com 0 warnings/0 erros. Commits e push feitos a cada serviço.
-  Próximo: Fase 1 (Aspire) por cima do backend já funcional, depois Fase 3
-  (observabilidade/testes).
+- **2026-09-04** — Fases 0, 1, 2 e 3 implementadas de ponta a ponta (código): faxina de
+  órfãos, fix do Outbox do Dispatch, migração de todo o solution para net10.0 (achado:
+  máquina sem runtime .NET 9), DeliveryService/InboxService/NotificationService
+  implementados, Aspire (AppHost + ServiceDefaults) orquestrando os 5 serviços +
+  RabbitMQ + SQL Server, teste de integração ponta-a-ponta escrito. Solution inteira
+  (25 projetos) compila com 0 warnings/0 erros. Commits e push feitos a cada etapa.
+  Falta só a validação em runtime com Docker Desktop ligado (ver seção acima) — nada
+  disso foi possível verificar nesta sessão porque o Docker não estava rodando na
+  máquina. Fase 4 (painel de domínio visual) fica pra uma próxima rodada.

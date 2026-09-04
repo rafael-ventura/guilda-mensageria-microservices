@@ -1,16 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="MassTransit" Version="8.5.2" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.2" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\InboxService.Domain\InboxService.Domain.csproj" />
     <ProjectReference Include="..\InboxService.Application\InboxService.Application.csproj" />
+    <ProjectReference Include="..\InboxService.Infrastructure\InboxService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
   </ItemGroup>
+
 </Project>

@@ -83,14 +83,18 @@ de todos os serviços rodando juntos, ao vivo.
 - [x] Retry (`UseMessageRetry` com os intervalos de `MessagingTopology.RetryPolicy`) +
       Circuit Breaker (`UseCircuitBreaker`) configurados no bus do worker
 
-### InboxService (o mais atrasado — consumer vazio)
-- [ ] Domain: `TimelineItem` (recado + status agregados por destinatário)
-- [ ] Infrastructure: EF Core (ou Dapper puro para leitura, já que é CQRS de leitura)
-- [ ] Application: handlers que materializam `RecadoCriadoEvent` e os eventos de entrega
-      na timeline
-- [ ] Implementar de fato `RecadoCriadoEventConsumer` (está vazio hoje)
-- [ ] Adicionar uma `InboxService.Host.Api` mínima (só GET) — hoje o serviço é só worker,
-      sem jeito de consultar a timeline por fora. `GET /inbox/{destinatario}`
+### InboxService ✅ concluído (2026-09-04)
+- [x] Domain: `ItemTimeline` (materialized view, uma linha por RecadoId, chave natural)
+- [x] Infrastructure: `InboxDbContext` (EF Core + SQL Server) + migration inicial
+- [x] Application: `RegistrarCriacaoNaTimelineCommandHandler` +
+      `AtualizarStatusNaTimelineCommandHandler` — idempotentes e tolerantes a
+      chegada fora de ordem (evento de entrega antes do de criação, já que são
+      exchanges independentes sem garantia de ordem entre si) via registro provisório
+- [x] Implementados de fato os 3 consumers: `RecadoCriadoEventConsumer` (estava vazio),
+      `EntregaConcluidaEventConsumer` e `EntregaFalhouEventConsumer` (novos)
+- [x] `InboxService.Host.Api` nova (minimal API, sem controllers) —
+      `GET /api/inbox/{destinatario}` via `ObterTimelineQuery` (lado de leitura do CQRS),
+      registrada na `.sln`
 
 ### NotificationService
 - [ ] Domain + Application com Strategy Pattern (interface `ICanalNotificacao`,

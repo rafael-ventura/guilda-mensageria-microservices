@@ -51,6 +51,9 @@ builder.Services.AddDbContext<DispatchService.Infrastructure.Data.DispatchDbCont
 // Repository Pattern + Unit of Work
 builder.Services.AddScoped<DispatchService.Domain.Repositories.IUnitOfWork, DispatchService.Infrastructure.Repositories.UnitOfWork>();
 
+// Outbox Pattern - publica no barramento as mensagens gravadas pela transação de escrita
+builder.Services.AddHostedService<DispatchService.Infrastructure.Outbox.OutboxPublisherService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

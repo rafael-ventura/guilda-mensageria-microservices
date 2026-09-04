@@ -1,0 +1,118 @@
+# Roadmap — Guilda dos Mensageiros
+
+Documento vivo. A ideia é avançar um pouco a cada sessão: escolher o próximo item não
+marcado, implementar, marcar `[x]`, e registrar uma linha no **Log de Progresso** no fim
+do arquivo. Qualquer sessão futura (sua ou do Claude) deve conseguir ler este arquivo e
+saber exatamente onde paramos e por quê.
+
+## Estado atual (2026-09-04)
+
+| Serviço | Domain | Infrastructure | Application | Integration | Status real |
+|---|---|---|---|---|---|
+| DispatchService (API) | ✅ | ✅ | ✅ | ✅ | Completo, funcional ponta-a-ponta na saída |
+| DeliveryService (worker) | 🔲 | 🔲 (TODO no Program.cs) | 🔲 | Consumer só loga + `Task.Delay` | Esqueleto |
+| InboxService (worker) | 🔲 | 🔲 | 🔲 | **Consumer vazio** (arquivo existe sem código) | Não iniciado |
+| NotificationService (worker) | 🔲 | 🔲 (TODO no Program.cs) | 🔲 | Consumer só loga + simula envio | Esqueleto |
+
+Achado de limpeza: `NotificationService/NotificationService.{Application,Domain,Infrastructure,Integration}`
+têm `.csproj` órfãos com nome `InboxService.*.csproj` (sobra de copy-paste, não referenciados
+na `.sln`, mas confundem quem abrir a pasta).
+
+---
+
+## Fase 0 — Faxina rápida (< 1h)
+
+- [ ] Remover os `.csproj` órfãos `InboxService.*.csproj` dentro das pastas `NotificationService.*`
+- [ ] *(opcional, não bloqueia o resto)* `Directory.Build.props` centralizando
+      `TargetFramework net9.0`/`Nullable`/`ImplicitUsings`
+- [ ] *(opcional, não bloqueia o resto)* `Directory.Packages.props` (central package
+      management) para não ter versão do MassTransit/MediatR/EF Core divergente entre serviços
+
+## Fase 1 — .NET Aspire (a espinha dorsal)
+
+Isso substitui o `docker-compose.yml` manual e já entrega boa parte do "painel" de graça:
+o **Aspire Dashboard** mostra logs, traces distribuídos, métricas e o grafo de recursos
+de todos os serviços rodando juntos, ao vivo.
+
+- [ ] `dotnet new aspire-apphost -o GuildaMensageria.AppHost`
+- [ ] `dotnet new aspire-servicedefaults -o GuildaMensageria.ServiceDefaults`
+- [ ] Referenciar `ServiceDefaults` nos 4 Host projects (`builder.AddServiceDefaults()`,
+      `app.MapDefaultEndpoints()`) — dá health checks e OpenTelemetry de graça
+- [ ] Modelar RabbitMQ e SQL Server como recursos do AppHost
+      (`Aspire.Hosting.RabbitMQ`, `Aspire.Hosting.SqlServer`) com `WithReference(...)`
+      nos 4 serviços, substituindo as connection strings hardcoded nos `appsettings.json`
+- [ ] Rodar `dotnet run --project GuildaMensageria.AppHost` e validar que os 4 serviços
+      sobem juntos com um único comando, com o Dashboard abrindo automático no browser
+- [ ] Aposentar o `docker-compose.yml` (ou manter só como alternativa "sem Aspire" no README)
+
+## Fase 2 — Terminar a lógica de negócio (o que realmente falta)
+
+### DispatchService — corrigir lacuna crítica
+- [ ] **Achado:** não existe nenhum `BackgroundService`/publisher lendo a tabela
+      `OutboxMessages` e publicando no RabbitMQ. Hoje o Outbox só grava, nunca publica —
+      ou seja, mesmo o serviço "completo" nunca dispara o fluxo de verdade.
+- [ ] Implementar `OutboxPublisherService` (BackgroundService) em
+      `DispatchService.Infrastructure`: poll periódico nos pendentes
+      (`IOutboxRepository.GetPendentesAsync`), deserializa por `EventType`, publica via
+      `IPublishEndpoint`, marca processado/registra falha com backoff
+- [ ] Remover `Npgsql.EntityFrameworkCore.PostgreSQL` do
+      `DispatchService.Infrastructure.csproj` (não usado — projeto já é SQL Server)
+
+### DeliveryService
+- [ ] Domain: entidade `Entrega` (status: Pendente/Entregue/Falhou, tentativas, timestamps)
+- [ ] Infrastructure: `DeliveryDbContext` (EF Core + SQL Server) + migration inicial
+- [ ] Application: handler que reage ao consumer, simula tentativa de entrega com
+      retry/backoff e circuit breaker (Polly), persiste resultado
+- [ ] Integration: publicar `EntregaConcluidaEvent`/`EntregaFalhouEvent` e enviar
+      `EnviarNotificacaoCommand` a partir do handler (hoje o consumer só loga)
+
+### InboxService (o mais atrasado — consumer vazio)
+- [ ] Domain: `TimelineItem` (recado + status agregados por destinatário)
+- [ ] Infrastructure: EF Core (ou Dapper puro para leitura, já que é CQRS de leitura)
+- [ ] Application: handlers que materializam `RecadoCriadoEvent` e os eventos de entrega
+      na timeline
+- [ ] Implementar de fato `RecadoCriadoEventConsumer` (está vazio hoje)
+- [ ] Adicionar uma `InboxService.Host.Api` mínima (só GET) — hoje o serviço é só worker,
+      sem jeito de consultar a timeline por fora. `GET /inbox/{destinatario}`
+
+### NotificationService
+- [ ] Domain + Application com Strategy Pattern (interface `ICanalNotificacao`,
+      implementação simulada hoje — desenhada para plugar Email/SMS depois sem reescrever)
+- [ ] Infrastructure: log estruturado das notificações "enviadas" (sem provider real por ora)
+
+## Fase 3 — Observabilidade fina + testes
+
+- [ ] Validar tracing distribuído ponta-a-ponta no Aspire Dashboard:
+      Dispatch → RabbitMQ → Delivery → Inbox/Notification num único trace
+- [ ] Testes de integração do fluxo completo usando `Aspire.Hosting.Testing`
+      (sobe a app inteira em memória/containers para o teste)
+- [ ] Revisar DLQs: forçar uma falha proposital e confirmar que a mensagem cai na `.dlq`
+
+## Fase 4 — Painel de domínio (stretch, o lado "bonitinho")
+
+Diferente do Aspire Dashboard (que é operacional/infra), esse é um painel dos **dados do
+domínio**: recados enviados, status de entrega, timeline, notificações — a parte temática
+da Guilda.
+
+- [ ] Expor endpoint JSON simples no `InboxService.Host.Api` (lista de recados + status)
+- [ ] Painel visual (pode nascer como Artifact do Claude consumindo esse endpoint, ou uma
+      página Blazor Server dentro da própria solução se quiser algo self-hosted)
+
+---
+
+## Decisões desta rodada (2026-09-04)
+
+- **Escopo:** Fases 0–3 (backend funcional ponta-a-ponta com Aspire). Fase 4 (painel de
+  domínio visual) fica para uma rodada futura.
+- **Branch:** direto na `main`, commits incrementais por fase/serviço, push periódico.
+- **Execução autônoma:** sem pausas para confirmação. Se o contexto for resumido/cortado,
+  a continuação deve ler este arquivo, ver o que está marcado `[x]`, rodar `dotnet build`
+  para confirmar o estado real, e seguir do próximo item não marcado.
+- Fase 0 reduzida ao essencial (remover órfãos). `Directory.Build.props` /
+  `Directory.Packages.props` viraram itens opcionais no fim da lista, não bloqueiam nada.
+
+## Log de Progresso
+
+- **2026-09-04** — Levantamento do estado atual do repo, criação deste roadmap e do
+  dashboard visual. Nenhum código alterado ainda. Escopo travado em Fases 0–3, direto na
+  main. Começando pela Fase 0.

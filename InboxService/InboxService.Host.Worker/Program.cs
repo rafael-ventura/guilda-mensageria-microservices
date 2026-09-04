@@ -12,6 +12,9 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Services.AddSerilog();
 
+// Aspire: service discovery, resilience, health checks e OpenTelemetry
+builder.AddServiceDefaults();
+
 // MediatR - Commands/Queries/Notifications
 builder.Services.AddMediatR(cfg =>
 {
@@ -22,7 +25,10 @@ builder.Services.AddMediatR(cfg =>
 // EF Core + SQL Server
 builder.Services.AddDbContext<InboxService.Infrastructure.Data.InboxDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // Aspire injeta "GuildaInbox" (nome do recurso do AppHost); fora do Aspire, usa appsettings
+    var connectionString = builder.Configuration.GetConnectionString("GuildaInbox")
+        ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
 });
 
 // Repository Pattern + Unit of Work
@@ -37,12 +43,21 @@ builder.Services.AddMassTransit(x =>
     x.UsingRabbitMq((context, cfg) =>
     {
         var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
+        var rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
 
-        cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+        if (!string.IsNullOrEmpty(rabbitConnectionString))
         {
-            h.Username(rabbitConfig["Username"] ?? "guest");
-            h.Password(rabbitConfig["Password"] ?? "guest");
-        });
+            // Injetado pelo Aspire AppHost (recurso "rabbitmq")
+            cfg.Host(new Uri(rabbitConnectionString));
+        }
+        else
+        {
+            cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+            {
+                h.Username(rabbitConfig["Username"] ?? "guest");
+                h.Password(rabbitConfig["Password"] ?? "guest");
+            });
+        }
 
         cfg.ConfigureEndpoints(context);
     });

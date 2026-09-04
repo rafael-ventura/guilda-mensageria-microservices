@@ -16,5 +16,6 @@
     <ProjectReference Include="..\NotificationService.Infrastructure\NotificationService.Infrastructure.csproj" />
     <ProjectReference Include="..\NotificationService.Integration\NotificationService.Integration.csproj" />
     <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
+    <ProjectReference Include="..\..\GuildaMensageria.ServiceDefaults\GuildaMensageria.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

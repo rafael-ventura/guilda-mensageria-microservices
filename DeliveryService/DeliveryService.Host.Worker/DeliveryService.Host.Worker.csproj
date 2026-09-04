@@ -24,6 +24,7 @@
     <ProjectReference Include="..\DeliveryService.Infrastructure\DeliveryService.Infrastructure.csproj" />
     <ProjectReference Include="..\DeliveryService.Integration\DeliveryService.Integration.csproj" />
     <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
+    <ProjectReference Include="..\..\GuildaMensageria.ServiceDefaults\GuildaMensageria.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

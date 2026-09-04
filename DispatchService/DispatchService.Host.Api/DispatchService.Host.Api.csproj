@@ -21,6 +21,7 @@
     <ProjectReference Include="..\DispatchService.Infrastructure\DispatchService.Infrastructure.csproj" />
     <ProjectReference Include="..\DispatchService.Integration\DispatchService.Integration.csproj" />
     <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
+    <ProjectReference Include="..\..\GuildaMensageria.ServiceDefaults\GuildaMensageria.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

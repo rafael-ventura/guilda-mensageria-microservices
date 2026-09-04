@@ -13,6 +13,9 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// Aspire: service discovery, resilience, health checks e OpenTelemetry
+builder.AddServiceDefaults();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -25,7 +28,10 @@ builder.Services.AddMediatR(cfg =>
 // EF Core + SQL Server
 builder.Services.AddDbContext<InboxService.Infrastructure.Data.InboxDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // Aspire injeta "GuildaInbox" (nome do recurso do AppHost); fora do Aspire, usa appsettings
+    var connectionString = builder.Configuration.GetConnectionString("GuildaInbox")
+        ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
 });
 
 // Repository Pattern + Unit of Work
@@ -46,7 +52,7 @@ app.MapGet("/api/inbox/{destinatario}", async (string destinatario, IMediator me
 })
 .WithName("ObterTimeline");
 
-app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy", Service = "InboxService", Timestamp = DateTime.UtcNow }));
+app.MapDefaultEndpoints();
 
 try
 {

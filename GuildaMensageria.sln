@@ -57,6 +57,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InboxService.Host.Api", "InboxService\InboxService.Host.Api\InboxService.Host.Api.csproj", "{ACF1B9F5-1BC5-4FB1-8517-2380572B4FF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuildaMensageria.AppHost", "GuildaMensageria.AppHost\GuildaMensageria.AppHost.csproj", "{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuildaMensageria.ServiceDefaults", "GuildaMensageria.ServiceDefaults\GuildaMensageria.ServiceDefaults.csproj", "{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -331,6 +335,30 @@ Global
 		{ACF1B9F5-1BC5-4FB1-8517-2380572B4FF3}.Release|x64.Build.0 = Release|Any CPU
 		{ACF1B9F5-1BC5-4FB1-8517-2380572B4FF3}.Release|x86.ActiveCfg = Release|Any CPU
 		{ACF1B9F5-1BC5-4FB1-8517-2380572B4FF3}.Release|x86.Build.0 = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|x64.Build.0 = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Debug|x86.Build.0 = Debug|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|x64.Build.0 = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|x86.ActiveCfg = Release|Any CPU
+		{D47AA1B9-44E3-434B-BC4C-DE94313B2A5F}.Release|x86.Build.0 = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|x64.Build.0 = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Debug|x86.Build.0 = Debug|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|x64.ActiveCfg = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|x64.Build.0 = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|x86.ActiveCfg = Release|Any CPU
+		{0A3F3C39-AA6B-40A4-8190-6542AC0837E9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

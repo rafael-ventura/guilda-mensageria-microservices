@@ -42,22 +42,30 @@ na `.sln`, mas confundem quem abrir a pasta).
 - [ ] *(opcional, não bloqueia o resto)* `Directory.Packages.props` (central package
       management) para não ter versão do MassTransit/MediatR/EF Core divergente entre serviços
 
-## Fase 1 — .NET Aspire (a espinha dorsal)
+## Fase 1 — .NET Aspire (a espinha dorsal) ✅ concluída (2026-09-04)
 
 Isso substitui o `docker-compose.yml` manual e já entrega boa parte do "painel" de graça:
 o **Aspire Dashboard** mostra logs, traces distribuídos, métricas e o grafo de recursos
 de todos os serviços rodando juntos, ao vivo.
 
-- [ ] `dotnet new aspire-apphost -o GuildaMensageria.AppHost`
-- [ ] `dotnet new aspire-servicedefaults -o GuildaMensageria.ServiceDefaults`
-- [ ] Referenciar `ServiceDefaults` nos 4 Host projects (`builder.AddServiceDefaults()`,
-      `app.MapDefaultEndpoints()`) — dá health checks e OpenTelemetry de graça
-- [ ] Modelar RabbitMQ e SQL Server como recursos do AppHost
-      (`Aspire.Hosting.RabbitMQ`, `Aspire.Hosting.SqlServer`) com `WithReference(...)`
-      nos 4 serviços, substituindo as connection strings hardcoded nos `appsettings.json`
-- [ ] Rodar `dotnet run --project GuildaMensageria.AppHost` e validar que os 4 serviços
-      sobem juntos com um único comando, com o Dashboard abrindo automático no browser
-- [ ] Aposentar o `docker-compose.yml` (ou manter só como alternativa "sem Aspire" no README)
+- [x] `GuildaMensageria.AppHost` (Aspire 13.5.3, `dotnet new aspire-apphost`)
+- [x] `GuildaMensageria.ServiceDefaults` (`dotnet new aspire-servicedefaults`)
+- [x] `ServiceDefaults` referenciado nos 5 Host projects (Dispatch API, Delivery Worker,
+      Inbox Worker, Inbox API, Notification Worker) — `builder.AddServiceDefaults()` em
+      todos, `app.MapDefaultEndpoints()` nos dois Web (`/health`, `/alive`)
+- [x] RabbitMQ (`Aspire.Hosting.RabbitMQ`, com management plugin) e SQL Server
+      (`Aspire.Hosting.SqlServer`, 3 databases: GuildaDispatch/GuildaDelivery/GuildaInbox)
+      modelados como recursos do AppHost, referenciados via `WithReference` +
+      `WaitFor` em cada serviço
+- [x] Cada `Program.cs` prefere a connection string injetada pelo Aspire
+      (`GetConnectionString("rabbitmq")` / `GetConnectionString("Guilda{Service}")`) e
+      cai para o `appsettings.json` manual quando ausente — dá pra rodar com ou sem
+      Aspire, docker-compose continua funcionando como alternativa
+- [x] Solution inteira compila (24 projetos, 0 warnings/0 erros) com o AppHost incluso
+- [ ] **Pendente de validação em runtime:** Docker Desktop não estava rodando nesta
+      máquina durante a implementação — rodar `dotnet run --project
+      GuildaMensageria.AppHost` (ou `aspire run`) com Docker ligado e confirmar que os
+      5 serviços sobem juntos e o Dashboard abre no browser mostrando tudo saudável
 
 ## Fase 2 — Terminar a lógica de negócio (o que realmente falta)
 

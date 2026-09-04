@@ -1,0 +1,25 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>ffcc30b2-8705-427a-8d14-a8259dc2335c</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.5.3" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DispatchService\DispatchService.Host.Api\DispatchService.Host.Api.csproj" />
+    <ProjectReference Include="..\DeliveryService\DeliveryService.Host.Worker\DeliveryService.Host.Worker.csproj" />
+    <ProjectReference Include="..\InboxService\InboxService.Host.Worker\InboxService.Host.Worker.csproj" />
+    <ProjectReference Include="..\InboxService\InboxService.Host.Api\InboxService.Host.Api.csproj" />
+    <ProjectReference Include="..\NotificationService\NotificationService.Host.Worker\NotificationService.Host.Worker.csproj" />
+  </ItemGroup>
+
+</Project>

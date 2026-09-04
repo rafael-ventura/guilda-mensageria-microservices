@@ -13,6 +13,9 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// Aspire: service discovery, resilience, health checks e OpenTelemetry
+builder.AddServiceDefaults();
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -32,11 +35,20 @@ builder.Services.AddMassTransit(x =>
     {
         var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
         
-        cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+        var rabbitConnectionString = builder.Configuration.GetConnectionString("rabbitmq");
+        if (!string.IsNullOrEmpty(rabbitConnectionString))
         {
-            h.Username(rabbitConfig["Username"] ?? "guest");
-            h.Password(rabbitConfig["Password"] ?? "guest");
-        });
+            // Injetado pelo Aspire AppHost (recurso "rabbitmq")
+            cfg.Host(new Uri(rabbitConnectionString));
+        }
+        else
+        {
+            cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+            {
+                h.Username(rabbitConfig["Username"] ?? "guest");
+                h.Password(rabbitConfig["Password"] ?? "guest");
+            });
+        }
 
         cfg.ConfigureEndpoints(context);
     });
@@ -45,7 +57,10 @@ builder.Services.AddMassTransit(x =>
 // EF Core + SQL Server
 builder.Services.AddDbContext<DispatchService.Infrastructure.Data.DispatchDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // Aspire injeta "GuildaDispatch" (nome do recurso do AppHost); fora do Aspire, usa appsettings
+    var connectionString = builder.Configuration.GetConnectionString("GuildaDispatch")
+        ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
 });
 
 // Repository Pattern + Unit of Work
@@ -66,6 +81,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.MapDefaultEndpoints();
 
 try
 {

@@ -17,6 +17,7 @@
     <ProjectReference Include="..\InboxService.Application\InboxService.Application.csproj" />
     <ProjectReference Include="..\InboxService.Infrastructure\InboxService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contracts\GuildaMensageria.Contracts\GuildaMensageria.Contracts.csproj" />
+    <ProjectReference Include="..\..\GuildaMensageria.ServiceDefaults\GuildaMensageria.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

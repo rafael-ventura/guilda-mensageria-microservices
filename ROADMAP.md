@@ -22,7 +22,21 @@ na `.sln`, mas confundem quem abrir a pasta).
 
 ## Fase 0 — Faxina rápida (< 1h)
 
-- [ ] Remover os `.csproj` órfãos `InboxService.*.csproj` dentro das pastas `NotificationService.*`
+- [x] Remover os `.csproj` órfãos `InboxService.*.csproj` dentro das pastas `NotificationService.*`
+      (inclusive um extra em `NotificationService.Host.Worker`, achado depois)
+- [x] **Achado de ambiente:** a máquina só tinha runtime .NET 6/7/8/10 instalado (sem o
+      .NET 9), mas todos os projetos miravam `net9.0` — nada rodava (só compilava).
+      Solução: subiu-se todo o solution (21 `.csproj`) para `net10.0`, alinhado ao SDK
+      instalado e ao Aspire (que também é dessa geração)
+- [x] **Achado de topologia:** `MessagingTopology.cs` documenta nomes canônicos
+      (`recado.events`, `notificacao.commands`, etc.) mas o código nunca aplicava isso de
+      fato — `cfg.ConfigureEndpoints(context)` usa a convenção default do MassTransit
+      (nome por tipo de mensagem). Funciona (Publish/Consume batem sozinhos por
+      convenção), só os nomes reais de exchange/fila no RabbitMQ não são os bonitinhos
+      documentados. Por isso os novos consumers usam `IPublishEndpoint.Publish` também
+      para os "comandos" (em vez de `Send` para uma fila com nome hardcoded, que
+      quebraria). Alinhar os nomes reais via `SetEntityName`/`ReceiveEndpoint` explícito
+      é um polimento futuro, não bloqueia nada hoje.
 - [ ] *(opcional, não bloqueia o resto)* `Directory.Build.props` centralizando
       `TargetFramework net9.0`/`Nullable`/`ImplicitUsings`
 - [ ] *(opcional, não bloqueia o resto)* `Directory.Packages.props` (central package
@@ -58,13 +72,16 @@ de todos os serviços rodando juntos, ao vivo.
 - [ ] Remover `Npgsql.EntityFrameworkCore.PostgreSQL` do
       `DispatchService.Infrastructure.csproj` (não usado — projeto já é SQL Server)
 
-### DeliveryService
-- [ ] Domain: entidade `Entrega` (status: Pendente/Entregue/Falhou, tentativas, timestamps)
-- [ ] Infrastructure: `DeliveryDbContext` (EF Core + SQL Server) + migration inicial
-- [ ] Application: handler que reage ao consumer, simula tentativa de entrega com
-      retry/backoff e circuit breaker (Polly), persiste resultado
-- [ ] Integration: publicar `EntregaConcluidaEvent`/`EntregaFalhouEvent` e enviar
-      `EnviarNotificacaoCommand` a partir do handler (hoje o consumer só loga)
+### DeliveryService ✅ concluído (2026-09-04)
+- [x] Domain: entidade `Entrega` (status: PendenteDeTentativa/Entregue/Falhou, tentativas, timestamps)
+- [x] Infrastructure: `DeliveryDbContext` (EF Core + SQL Server) + migration inicial
+- [x] Application: `ProcessarEntregaCommandHandler` — idempotente por RecadoId, simula
+      tentativa de entrega (~70% sucesso), decide se é falha temporária ou definitiva
+- [x] Integration: `RecadoCriadoEventConsumer` publica `EntregaConcluidaEvent`/
+      `EntregaFalhouEvent` e `EnviarNotificacaoCommand` conforme o resultado; falha
+      temporária relança exceção para o retry/circuit breaker do MassTransit agirem
+- [x] Retry (`UseMessageRetry` com os intervalos de `MessagingTopology.RetryPolicy`) +
+      Circuit Breaker (`UseCircuitBreaker`) configurados no bus do worker
 
 ### InboxService (o mais atrasado — consumer vazio)
 - [ ] Domain: `TimelineItem` (recado + status agregados por destinatário)

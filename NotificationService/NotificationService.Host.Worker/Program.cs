@@ -30,8 +30,8 @@ builder.Services.AddMassTransit(x =>
         
         cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
         {
-            h.Username(rabbitConfig["Username"]);
-            h.Password(rabbitConfig["Password"]);
+            h.Username(rabbitConfig["Username"] ?? "guest");
+            h.Password(rabbitConfig["Password"] ?? "guest");
         });
 
         cfg.ConfigureEndpoints(context);

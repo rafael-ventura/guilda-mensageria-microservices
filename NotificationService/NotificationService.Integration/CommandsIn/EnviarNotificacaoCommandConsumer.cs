@@ -1,6 +1,8 @@
 using GuildaMensageria.Contracts.Commands;
 using MassTransit;
+using MediatR;
 using Microsoft.Extensions.Logging;
+using NotificationService.Application.Commands;
 
 namespace NotificationService.Integration.CommandsIn;
 
@@ -9,37 +11,34 @@ namespace NotificationService.Integration.CommandsIn;
 /// </summary>
 public class EnviarNotificacaoCommandConsumer : IConsumer<EnviarNotificacaoCommand>
 {
+    private readonly IMediator _mediator;
     private readonly ILogger<EnviarNotificacaoCommandConsumer> _logger;
 
-    public EnviarNotificacaoCommandConsumer(ILogger<EnviarNotificacaoCommandConsumer> logger)
+    public EnviarNotificacaoCommandConsumer(IMediator mediator, ILogger<EnviarNotificacaoCommandConsumer> logger)
     {
+        _mediator = mediator;
         _logger = logger;
     }
 
     public async Task Consume(ConsumeContext<EnviarNotificacaoCommand> context)
     {
         var comando = context.Message;
-        
+
         _logger.LogInformation(
             "🔔 Recebido comando EnviarNotificacao - RecadoId: {RecadoId}, Tipo: {Tipo}, Destinatario: {Destinatario}",
             comando.RecadoId, comando.Tipo, comando.Destinatario);
 
-        try
+        var resultado = await _mediator.Send(new ProcessarNotificacaoCommand(
+            comando.RecadoId,
+            comando.Destinatario,
+            comando.Remetente,
+            comando.Tipo.ToString(),
+            comando.Mensagem), context.CancellationToken);
+
+        if (!resultado.Enviada)
         {
-            // TODO: Implementar lógica de envio de notificação (Email, SMS, Push, etc.)
-            // Por enquanto, apenas simula o envio
-            await Task.Delay(200, context.CancellationToken);
-            
-            _logger.LogInformation(
-                "✅ Notificação enviada com sucesso - RecadoId: {RecadoId}, Tipo: {Tipo}, Mensagem: {Mensagem}",
-                comando.RecadoId, comando.Tipo, comando.Mensagem);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, 
-                "❌ Erro ao enviar notificação para RecadoId: {RecadoId}", 
-                comando.RecadoId);
-            throw; // Re-throw para acionar retry policy
+            // Relança para o retry do MassTransit tentar de novo
+            throw new InvalidOperationException(resultado.Erro ?? "Falha ao enviar notificação");
         }
     }
 }

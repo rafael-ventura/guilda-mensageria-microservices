@@ -1,5 +1,7 @@
-using Serilog;
 using MassTransit;
+using NotificationService.Domain.Notificacoes;
+using NotificationService.Infrastructure.Notificacoes;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -11,23 +13,26 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Services.AddSerilog();
 
-// MediatR - Commands/Queries/Notifications  
-builder.Services.AddMediatR(cfg => 
+// MediatR - Commands/Queries/Notifications
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.RegisterServicesFromAssemblyContaining<NotificationService.Application.AssemblyMarker>();
 });
+
+// Strategy Pattern - canal de notificação (hoje simulado via console/log)
+builder.Services.AddScoped<ICanalNotificacao, ConsoleCanalNotificacao>();
 
 // MassTransit - Mensageria com RabbitMQ
 builder.Services.AddMassTransit(x =>
 {
     // Registrar consumers
     x.AddConsumersFromNamespaceContaining<NotificationService.Integration.CommandsIn.EnviarNotificacaoCommandConsumer>();
-    
+
     x.UsingRabbitMq((context, cfg) =>
     {
         var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
-        
+
         cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
         {
             h.Username(rabbitConfig["Username"] ?? "guest");
@@ -37,8 +42,6 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
-
-// TODO: Adicionar EF Core
 
 var host = builder.Build();
 

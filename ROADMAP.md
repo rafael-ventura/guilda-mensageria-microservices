@@ -96,10 +96,15 @@ de todos os serviços rodando juntos, ao vivo.
       `GET /api/inbox/{destinatario}` via `ObterTimelineQuery` (lado de leitura do CQRS),
       registrada na `.sln`
 
-### NotificationService
-- [ ] Domain + Application com Strategy Pattern (interface `ICanalNotificacao`,
-      implementação simulada hoje — desenhada para plugar Email/SMS depois sem reescrever)
-- [ ] Infrastructure: log estruturado das notificações "enviadas" (sem provider real por ora)
+### NotificationService ✅ concluído (2026-09-04)
+- [x] Domain: porta `ICanalNotificacao` (Strategy) + VO `NotificacaoMensagem`
+- [x] Infrastructure: `ConsoleCanalNotificacao` — estratégia concreta simulada (log
+      estruturado); trocar por Email/SMS/Push depois é só implementar a interface de
+      novo e registrar no DI, Application não muda
+- [x] Application: `ProcessarNotificacaoCommandHandler` (Template Method — monta a
+      mensagem, delega ao canal, trata sucesso/erro de forma uniforme)
+- [x] Integration: `EnviarNotificacaoCommandConsumer` implementado de verdade (antes só
+      logava e simulava)
 
 ## Fase 3 — Observabilidade fina + testes
 
@@ -135,5 +140,10 @@ da Guilda.
 ## Log de Progresso
 
 - **2026-09-04** — Levantamento do estado atual do repo, criação deste roadmap e do
-  dashboard visual. Nenhum código alterado ainda. Escopo travado em Fases 0–3, direto na
-  main. Começando pela Fase 0.
+  dashboard visual. Escopo travado em Fases 0–3, direto na main.
+- **2026-09-04** — Fases 0 e 2 concluídas: faxina de órfãos, fix do Outbox do Dispatch,
+  migração de todo o solution para net10.0 (achado: máquina sem runtime .NET 9),
+  DeliveryService/InboxService/NotificationService implementados de ponta a ponta.
+  Solution inteira compila com 0 warnings/0 erros. Commits e push feitos a cada serviço.
+  Próximo: Fase 1 (Aspire) por cima do backend já funcional, depois Fase 3
+  (observabilidade/testes).

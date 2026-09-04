@@ -1,5 +1,8 @@
 # Roadmap — Guilda dos Mensageiros
 
+Painel visual (snapshot, republicar quando o progresso mudar bastante):
+https://claude.ai/code/artifact/325062e3-936f-4bde-918d-daa12be92a84
+
 Documento vivo. A ideia é avançar um pouco a cada sessão: escolher o próximo item não
 marcado, implementar, marcar `[x]`, e registrar uma linha no **Log de Progresso** no fim
 do arquivo. Qualquer sessão futura (sua ou do Claude) deve conseguir ler este arquivo e
